@@ -11,7 +11,7 @@ Given that all numerals of the shape 'X hundred and Y' are decomposed to '_ hund
 
 The decomposition algorithm is based on arithmetic criteria that do not only work for base 10 numeral systems, but almost any system, see 'Performance Analysis'.
 
-'Code' is a Python script containing the function advanced_parse, which represents the Numeral Decomposer 1.1.
+'Code.py' is a Python script containing the function advanced_parse, which represents the Numeral Decomposer 1.1.
 Function decompose_numeral is easy to use. Just pass an int number and a language* to see a fully documented decomposition of the numeral.
 
 'Performance Analysis' is the output of the script 'Code for Performance Analysis'. For 260 languages, it summarizes what lexicon of context-free functions is produced by the Numeral Decomposer 1.1.
