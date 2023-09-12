@@ -1,6 +1,7 @@
 # Numeral-Decomposer-1.1
 Improved version of Numeral Decompose 1.0, see https://github.com/ikmMaierBTUCS/Numeral-decomposer-1.0
-It can decompose numeral words into a function with inputs, e.g. <span style="font-style: normal;">two hundred and twenty-seven</span> --> <span style="font-style: normal;">_ hundred and _</span>(2,27). Given that all numerals of the shape <span style="font-style: normal;">X hundred and Y</span> are decomposed to <span style="font-style: normal;">_ hundred and _</span>(X,Y), they can be grouped to one single function <span style="font-style: normal;">_ hundred and _</span>: {1,...,9}x{1,...,99}, (x,y)->100x+y
+It can decompose numeral words into a function with inputs, e.g. '`two hundred and twenty-seven`' --> '_ hundred and _'(2,27). Given that all numerals of the shape '`X hundred and Y`' are decomposed to '`_ hundred and _`'(X,Y), they can be grouped to one single function '`_ hundred and _`': {1,...,9}x{1,...,99}, (x,y)->100x+y
+
 
 The decomposition algorithm is based on arithmetic criteria that do not only work for base 10 numeral systems, but almost any system, see Performance Analysis.
 
