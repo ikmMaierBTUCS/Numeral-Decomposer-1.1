@@ -20,4 +20,4 @@ In the plot 'Lexicon sizes of Versions 1.0 and 1.1 plotted.png', the blue line s
 
 In the plot 'Ratios of Version 1.1 lexicon sizes to Version 1.0 lexicon sizes.png', we plotted by which ratios the Numeral Decomposer 1.1 reduced lexica in comparison to the Numeral Decomposer 1.0.
 
-*Pass a language by writing one the strings listed in 'Languages'. In order to use the written out language terms, you also need to download 'Numeral.csv' and link its path to FILE_PATH_OF_LANGUAGESANDNUMBERS_DATA_CSV in the code.
+*Pass a language by writing one the strings listed in 'Languages'. For some of the languages you also need to download 'Numeral.csv' and link its path to FILE_PATH_OF_LANGUAGESANDNUMBERS_DATA_CSV in the code.
