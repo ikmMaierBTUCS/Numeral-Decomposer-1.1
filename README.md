@@ -16,7 +16,8 @@ Function decompose_numeral is easy to use. Just pass an int number and a languag
 
 'Performance Analysis' is the output of the script 'Code for Performance Analysis'. For 260 languages, it summarizes what lexicon of functions is produced by the Numeral Decomposer 1.1.
 
-In the plot 'Lexicon sizes of Versions 1.0 and 1.1 plotted.png', the blue line shows the lexicon sizes - i.e. number of functions - of the Numeral Decomposer 1.1 in arising order from left to right. The green line shows the lexicon sizes of the Numeral Decomposer 1.0 in arising order from left to right. For the sake of better presentation, we removed the 2 biggest sizes from the the plot each for both versions.
+In the plots, we present the lexicon sizes of the numeral decomposers, i.e. the numbers of functions that the numeral decomposers structure a language's numeral system into.
+In 'Lexicon sizes of Versions 1.0 and 1.1 plotted.png', the blue line shows the lexicon sizes of the Numeral Decomposer 1.1 in arising order from left to right. The green line shows the lexicon sizes of the Numeral Decomposer 1.0 in arising order from left to right. For the sake of better presentation, we removed the 2 largest out of 277 values from the the plot each for both versions.
 
 In the plot 'Ratios of Version 1.1 lexicon sizes to Version 1.0 lexicon sizes.png', we plotted by which ratios the Numeral Decomposer 1.1 reduced lexica in comparison to the Numeral Decomposer 1.0.
 
