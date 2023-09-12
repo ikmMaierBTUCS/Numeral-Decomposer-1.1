@@ -641,7 +641,7 @@ def old_list_scfunctions(language):
     #print(printout)
     return len(set_of_scfunctions) + irreducible_count
 
-def parse_numeral(number,language,version='new'):
+def decompose_numeral(number,language,version='new'):
     '''
     Pass in a (int) number and a language to see a full documentation how the numeral decomposer decomposes the numeral word
     Pass in 'old' as third parameter to see, how version 1.0 decomposes
