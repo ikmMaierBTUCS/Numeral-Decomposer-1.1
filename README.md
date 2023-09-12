@@ -1,6 +1,6 @@
 # Numeral-Decomposer-1.1
 Improved version of Numeral Decompose 1.0, see https://github.com/ikmMaierBTUCS/Numeral-decomposer-1.0
-It can decompose numeral words into a function with inputs, e.g. 'two hundred and twenty-seven' --> '_ hundred and &#95'(2,27). Given that all numerals of the shape 'X hundred and Y' are decomposed to '_ hundred and &#95'(X,Y), they can be grouped to one single function '_ hundred and &#95': {1,...,9}x{1,...,99}, (x,y)->100x+y
+It can decompose numeral words into a function with inputs, e.g. 'two hundred and twenty-seven' --> '_ hundred and \_'(2,27). Given that all numerals of the shape 'X hundred and Y' are decomposed to '_ hundred and \_'(X,Y), they can be grouped to one single function '_ hundred and \_': {1,...,9}x{1,...,99}, (x,y)->100x+y
 The decomposition algorithm is based on arithmetic criteria that do not only work for base 10 numeral systems, but almost any system, see Performance Analysis.
 
 'Code' is a Python script containing the function advanced_parse, which represents the Numeral Decomposer 1.1.
