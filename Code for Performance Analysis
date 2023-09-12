@@ -17,16 +17,3 @@ for language in list(package_languagesandnumbers)+package_num2words:
     except:
         pass
 ratios = [lexsizes[i]/oldlexsizes[i] for i in range(len(lexsizes))]
-ratios.sort()
-lexsizes.sort()
-oldlexsizes.sort()
-data100=[]
-olddata100=[]
-for i in range(len(lexsizes)):
-    data100=data100+[np.mean(lexsizes[i:(i+1)])]
-    olddata100=olddata100+[np.mean(oldlexsizes[i:(i+1)])]
-plt.plot(data100)
-plt.plot(olddata100)
-
-'''IN NEW PLOT'''
-plt.plot(ratios)
