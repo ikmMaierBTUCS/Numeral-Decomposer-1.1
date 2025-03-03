@@ -12,7 +12,8 @@ Given that all numerals of the shape 'X hundred and Y' are decomposed to '_ hund
 The decomposition algorithm is based on arithmetic criteria that do not only work for base 10 numeral systems, but almost any system, see 'Performance Analysis'.
 
 Try it out by downloading the folder numdec_app, navigating into it and prompting 
-```python numdec.py```
+
+```python numdec.py```.
 
 'Code.py' is a Python script containing the function advanced_parse, which represents the Numeral Decomposer 1.1.
 Function decompose_numeral is easy to use. Just pass an int number and a language* to see a fully documented decomposition of the numeral.
