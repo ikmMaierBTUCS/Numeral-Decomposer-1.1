@@ -12,14 +12,7 @@ Given that all numerals of the shape 'X hundred and Y' are decomposed to '_ hund
 The decomposition algorithm is based on arithmetic criteria that do not only work for base 10 numeral systems, but almost any system, see 'Performance Analysis'.
 
 Try it out by
-1. making sure that you have
-```pip install numpy
-pip install num2words 
-pip install sympy
-pip install diophantine 
-pip install alphabet_detector
-pip install pandas
-```,
+1. making sure that you have installed the packages ```numpy, num2words, sympy, diophantine, alphabet_detector, pandas``` ,
 2. downloading the folder numdec_app,
 3. navigating into it and
 4. prompting ```python numdec.py```.
