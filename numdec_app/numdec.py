@@ -467,7 +467,7 @@ def proto_parse(number,numeral,lexicon,print_documentation,print_result): #parse
                 if entry.word==substring: #look if substring appears
                     subnum_found_at_this_end=True
                     if 2*entry.number<number: #highlighting condition
-                        if print_documentation: print(substring+' <' + str(entry.number) + '/2')
+                        if print_documentation: print(substring+' <' + str(number) + '/2')
                         #highlights=[highlight for highlight in highlights if not highlight.start>=start]# if a highlight is contained in new highlight, then remove it from list of highlights
                         for highlight in highlights[:]: #browse through present highlights
                             if highlight.start>=start: # if a highlight is contained in new highlight,...
@@ -476,7 +476,7 @@ def proto_parse(number,numeral,lexicon,print_documentation,print_result): #parse
                         highlights=highlights+[Highlight(entry,start)] # add new highlight
                         if print_documentation: print('Unpacked: ['+','.join([str(highlight.numeral) for highlight in highlights])+']')
                     else:
-                        if print_documentation: print(substring+' ≥' + str(entry.number) + '/2')
+                        if print_documentation: print(substring+' ≥' + str(number) + '/2')
                         checkpoint=end
                         if print_documentation: print("Set checkpoint behind "+numeral[:checkpoint])
                     break # out of browsing the lexicon
