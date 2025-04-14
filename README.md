@@ -1,5 +1,5 @@
 # Numeral-Decomposer-1.1
-Improved version of Numeral Decompose 1.0, see https://github.com/ikmMaierBTUCS/Numeral-decomposer-1.0
+Improved version of Numeral Decomposer 1.0, see https://github.com/ikmMaierBTUCS/Numeral-decomposer-1.0
 
 It can decompose numeral words into a function with inputs, e.g. 
 
