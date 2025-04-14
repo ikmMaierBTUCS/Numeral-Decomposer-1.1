@@ -15,6 +15,8 @@ from diophantine import solve
 import pandas as pd
 from alphabet_detector import AlphabetDetector
 
+import unicodedata
+
 class Vocabulary:
     def __init__(self, nb, nal):
         if type(nb) is list or type(nb) is np.array:
@@ -36,7 +38,7 @@ class Vocabulary:
         self.inputrange = []
         self.mapping = [nb]
     def printVoc(self):
-        print(str(self.number)+' '+self.numeral)
+        print(str(self.number)+' '+self.word)
     def all_outputs(self):
         return [self]
     def dimension(self):
@@ -233,7 +235,7 @@ class SCFunction:
         else:
             # DANN PRÜFE ERST OB MERGEE NICHT IM SPANN DER INPUTRANGE LIEGT. WENN DOCH, DANN BRAUCHT ES EINE SEPARATE FUNKTION
             # MACH PROPOSAL UND DANN PRÜFE OB ES EINE HÖHERE DIMENSION HAT ALS SELF. WENN NICHT KANN ES NICHT MERGEN
-            build_base = self.input_numberbase()
+            build_base = [b for b in self.input_numberbase()]
             build_image = [np.dot(self.mapping,basevec) for basevec in build_base]
             #print([[component[0].number for component in mergee.inputrange]+[1]] + build_base)
             new_dim = np.linalg.matrix_rank(np.array([[component[0].number for component in mergee.inputrange]+[1]] + build_base, dtype=np.float64))
@@ -243,21 +245,29 @@ class SCFunction:
                 build_base = [[component[0].number for component in mergee.inputrange]+[1]] + build_base
                 build_image = [mergee.mapping[-1]] + build_image
             else:
-                #print('No merge')
+                self.sample().present()
+                print('No merge')
+                self.present()
+                mergee.present()
                 #print(build_base)
                 #print([component[0].number for component in mergee.inputrange]+[1])
                 raise BaseException('Mergee must have a different mapping')
-            try:
-                coefficients=solve(build_base,build_image)[0]
-            except:
-                coefficients=np.dot(np.linalg.pinv(np.array(build_base, dtype=np.float64),rcond=1e-15),build_image)
-            coefficients=[round(coeff) for coeff in coefficients]
+            #print(build_base)
+            #print(build_image)
+            coefficients=intlinsolve([b[:-1] for b in build_base],build_image)
+            #try:
+                #coefficients=solve(build_base,build_image)[0]
+            #except:
+                #coefficients=np.dot(np.linalg.pinv(np.array(build_base, dtype=np.float64),rcond=1e-15),build_image)
+            #coefficients=[round(coeff) for coeff in coefficients]
             #print(coefficients)
             #print(len(mergee.inputrange+self.inputrange))
             return SCFunction(self.root,new_inputrange,list(coefficients))
-    def present(self):
+    def present(self, domain=True, printout=True):
         if self.dimension() == 0:
-            print(self.root+" is "+str(self.mapping[-1]))
+            if printout: 
+                print(self.root+" is "+str(self.mapping[-1]))
+            return self.root+" is "+str(self.mapping[-1])
         else:
             domainstrs = []
             for comp in self.inputrange:
@@ -272,21 +282,27 @@ class SCFunction:
             domainstr = 'x'.join(domainstrs)
             if self.dimension() == 1:
                 inpstr = 'x'
-                outpstr = str(self.mapping[0]) + '*x+' + str(self.mapping[1])
+                outpstr = str(self.mapping[0]) + 'x+' + str(self.mapping[1])
             else:
+                variables = ['x','y','z','a','b','c','d','e','f','g','h']
                 inpstr = '('
                 outpstr = ''
                 for comp in range(self.dimension()):
-                    inpstr += 'x'+str(comp)+','
-                    outpstr += str(self.mapping[comp]) + '*x' + str(comp) + '+'
+                    inpstr += variables[comp]+','
+                    outpstr += str(self.mapping[comp]) + variables[comp] + '+'
                 inpstr = inpstr[:-1] + ')'
                 if self.mapping[-1] != 0:
                     outpstr += str(self.mapping[-1])
                 else:
                     outpstr = outpstr[:-1]
-            retstr = "Function " + self.root + " maps " + domainstr + " by " + inpstr + ' -> ' + outpstr
-            print(retstr)
-    def reinforce(self,lexicon,supervisor):
+            if domain:
+                retstr = "Function " + self.root + "\t maps " + domainstr + "\t by " + inpstr + '\t -> ' + outpstr
+            else:
+                retstr = self.root + "\t maps " + inpstr + '\t -> ' + outpstr
+            if printout:
+                print(retstr)
+            return retstr
+    def reinforce(self,lexicon,supervisor,printb=True):
         copy = self
         candidates_for_abstraction = []
         upper_limit = sum([max([0,coeff]) for coeff in self.mapping])
@@ -339,12 +355,31 @@ class SCFunction:
                                 #copy.present()
                             else:
                                 pass
-                                print('OK, but I think this is not related')
+                                if printb: print('OK, but I think this is not related')
                             break
                     else:
                         pass
                         #print('Supervisor: No')
         return copy
+
+def intlinsolve(base,image):
+    #print('base: ',base)
+    #print('image: ',image)
+    try:
+        solution = list(solve(base,image)[0])
+        #print('solution is ',solution)
+        return solution+[0]
+    except IndexError:
+        #print('constant needed')
+        try:
+            return solve([b+[1] for b in base],image)[0]
+        except NotImplementedError:
+            #print('unique solution')
+            #return [round(i) for i in np.dot(np.linalg.pinv(np.array([b+[1] for b in base], dtype=np.float64),rcond=1e-15),image)]
+            return [round(i) for i in np.dot(np.linalg.pinv(np.array([b+[1] for b in base], dtype=np.float64)),image)]
+    except NotImplementedError:
+        #print('unique solution')
+        return [round(i) for i in np.dot(np.linalg.pinv(np.array(base, dtype=np.float64)),image)]+[0]
 
 def cartesian_product(listlist):
     if len(listlist)==0:
@@ -359,48 +394,6 @@ def cartesian_product(listlist):
     return cp
 
 
-def proto_parse(number,numeral,lexicon,print_documentation,print_result): #parse a (int number,str numeral)-pair using (current) lexicon 'lexicon'. boolean print_documentation toggles documentation printout. boolean print_result toggles result printout
-    #print('parse '+numeral)
-    if print_documentation: print('parse '+numeral+' '+str(number))
-    lex1=lexicon+[Vocabulary(number,numeral)] # so the new word itself is found at the end
-    checkpoint=0 # point from which parsing is finally performed already
-    highlights=[] #list of highlights, initially empty
-    for end in range(len(numeral)+1): #set end of the observed substring
-        startrange=range(checkpoint,end) #start of observed string may lie between checkpoint and end
-        for highlight in highlights:
-            startrange=set(startrange)-set(highlight.hlrange()) # observed strings may not start inside present highlights. rather they have to fully contain a highlight or be disjoint with it
-        startrange=sorted(list(startrange)) # so ints in startrange are sorted by size
-        for start in startrange: # set start of observed substring of numeral
-            subnum_found_at_this_end=False # boolean condition to break start-loop
-            substring=numeral[start:end] #set observed substring
-            if print_documentation: print(substring)
-            for entry in lex1: #browse current lexicon
-                if entry.word==substring: #look if substring appears
-                    subnum_found_at_this_end=True
-                    if 2*entry.number<=number: #highlighting condition
-                        highlights=[highlight for highlight in highlights if not highlight.start>=start]# if a highlight is contained in new highlight, then remove it from list of highlights
-                        #for highlight in highlights: #browse through present highlights
-                            #if highlight.start>=start: # if a highlight is contained in new highlight,...
-                                #if print_documentation: print("remove "+highlight.numeral)
-                                #highlights.remove(highlight) #then remove it from list of highlights
-                        highlights=highlights+[Highlight(entry,start)] # add new highlight
-                        if print_documentation: print('highlights = ['+','.join([str(highlight.numeral) for highlight in highlights])+']')
-                    else:
-                        if print_documentation: print(substring+' violates highlighting condition')
-                        checkpoint=end
-                    break # out of browsing the lexicon
-            if subnum_found_at_this_end:
-                break # out of start-loop
-    root=numeral
-    for highlight in reversed(highlights):
-        root=root[0:highlight.start]+'_'+root[highlight.end():len(root)]
-    decompstr=str(number)+'='+root+'('
-    decompstr=decompstr+','.join([str(highlight.number) for highlight in highlights])
-    #for highlight in highlights:
-    #    decompstr=decompstr+str(highlight.number)+','
-    decompstr=decompstr+')'
-    if print_result: print(decompstr)
-    return SCFunction(root,[[Vocabulary(highlight.number,highlight.numeral)] for highlight in highlights],[0 for highlight in highlights]+[number])
 def delatinized(string):
     #print(string)
     ad = AlphabetDetector()
@@ -432,48 +425,163 @@ def delatinized(string):
             return string
     else:
         return string
-    
-def create_lexicon(language):
+  
+def create_lexicon(language,set_limit=10**9):
     LEX=[]
     try:
         num2words(1, lang=language)
-        for integer in list(range(1,1001))+[1002,1006,1100,1200,1206,7000,7002,7006,7100,7200,7206,10000,17000,17206,20000,27000,27006,27200,27206]:
-            try:
-                numeral=num2words(integer, lang=language)
-                voc=Vocabulary(integer,numeral)
-                LEX=LEX+[voc]
-            except:
-                pass
+        for integer in list(range(1,1001))+[1002,1006,1100,1200,1206,7000,7002,7006,7100,7200,7206,10000,17000,17200,17206,20000,27000,27006,27200,27206]:
+            if integer < set_limit:
+                try:
+                    numeral=num2words(integer, lang=language)
+                    voc=Vocabulary(integer,numeral)
+                    LEX=LEX+[voc]
+                except:
+                    pass
         return LEX
     except:
         try:
-            lanu=pd.read_csv(r'C:\Users\ikm\OneDrive\Desktop\NumeralParsingPerformance\Languages&NumbersData\Numeral.csv', encoding = "utf_16", sep = '\t')
+            #lanu=pd.read_csv(r'C:\Users\ikm\OneDrive\Desktop\NumeralParsingPerformance\Languages&NumbersData\Numeral.csv', encoding = "utf_16", sep = '\t')
+            lanu=pd.read_csv(r'Numeral.csv', encoding = "utf_16", sep = '\t')
             df=lanu[lanu['Language']==language]
             biscriptual=False
             if ' ' in df.iloc[0,2]:
                 biscriptual=True
             for i in range(len(df)):
-                numeral=df.iloc[i,2]
-                if numeral[0]==' ':
-                    numeral=numeral[1:]
-                if numeral[-1]==' ':
-                    numeral=numeral[:-1]
-                if language in ['Latin','Persian','Arabic']:
-                    words=numeral.split(' ')
-                    numeral=' '.join(iter(words[:-1]))
-                if language in ['Chuvash','Adyghe']:
-                    words=numeral.split(' ')
-                    numeral=' '.join(iter(words[:len(words)//2]))
-                if biscriptual and not language in ['Chuvash','Adyghe','Latin','Persian','Arabic']:
-                    numeral=delatinized(numeral)
-                #print(numeral)
-                numeral=numeral.replace('%',',')
-                #print(numeral)
-                voc=Vocabulary(i+1,numeral)
-                LEX=LEX+[voc]
+                if i+1 < set_limit:
+                    numeral=df.iloc[i,2]
+                    if numeral[0]==' ':
+                        numeral=numeral[1:]
+                    if numeral[-1]==' ':
+                        numeral=numeral[:-1]
+                    if language in ['Latin','Persian','Arabic']:
+                        words=numeral.split(' ')
+                        numeral=' '.join(iter(words[:-1]))
+                    if language in ['Chuvash','Adyghe']:
+                        words=numeral.split(' ')
+                        numeral=' '.join(iter(words[:len(words)//2]))
+                    if biscriptual and not language in ['Chuvash','Adyghe','Latin','Persian','Arabic']:
+                        numeral=delatinized(numeral)
+                    #print(numeral)
+                    numeral=numeral.replace('%',',')
+                    #print(numeral)
+                    voc=Vocabulary(i+1,numeral)
+                    LEX=LEX+[voc]
             return LEX
         except:
-            raise NotImplementedError("Language "+language+" is not supported or spelled differently")
+            if True:
+                lanu=pd.read_csv(r'DVNum.csv', encoding = "utf_8", sep = ';')
+                #print(lanu)
+                #print(lanu.columns)
+                df=lanu[lanu['Language']==language]
+                for i in range(len(df)):
+                    if i+1 < set_limit:
+                        numeral=df.iloc[i,2]
+                        if numeral[0]==' ':
+                            numeral=numeral[1:]
+                        if numeral[-1]==' ':
+                            numeral=numeral[:-1]
+                        voc=Vocabulary(i+1,unicodedata.normalize('NFC',numeral))
+                        LEX=LEX+[voc]
+                for voc in LEX:
+                    pass
+                    #voc.printVoc()
+                    #print(len(voc.word))
+                return LEX
+            #except:
+                #raise NotImplementedError("Language "+language+" is not supported or spelled differently")
+
+def get_numeral(number,language):
+    try:
+        numeral = num2words(number,lang=language)
+        return numeral
+    except:
+        try:
+            lanu=pd.read_csv(r'Numeralnew.csv', encoding = "utf_16", sep = '\t')
+            df=lanu[lanu['Language']==language]
+            biscriptual=False
+            if ' ' in df.iloc[0,2]:
+                biscriptual=True
+            numeral=df.iloc[number-1,2]
+            if numeral[0]==' ':
+                numeral=numeral[1:]
+            if numeral[-1]==' ':
+                numeral=numeral[:-1]
+            if language in ['Latin','Persian','Arabic']:
+                words=numeral.split(' ')
+                numeral=' '.join(iter(words[:-1]))
+            if language in ['Chuvash','Adyghe']:
+                words=numeral.split(' ')
+                numeral=' '.join(iter(words[:len(words)//2]))
+            if biscriptual and not language in ['Chuvash','Adyghe','Latin','Persian','Arabic']:
+                numeral=delatinized(numeral)
+            #print(numeral)
+            numeral=numeral.replace('%',',')
+            return numeral
+        except:
+            lanu=pd.read_csv(r'DVNum.csv', encoding = "utf_8", sep = ';')
+            df=lanu[lanu['Language']==language]
+            numeral=df.iloc[number-1,2]
+            if numeral[0]==' ':
+                numeral=numeral[1:]
+            if numeral[-1]==' ':
+                numeral=numeral[:-1]
+            numeral = unicodedata.normalize('NFC',numeral)
+            return numeral    
+
+def proto_parse(number,numeral,lexicon,print_documentation,print_result): #parse a (int number,str numeral)-pair using (current) lexicon 'lexicon'. boolean print_documentation toggles documentation printout. boolean print_result toggles result printout
+    #print('parse '+numeral)
+    if print_documentation: print('parse '+numeral+' '+str(number))
+    lex1 = []
+    if len(lexicon) != 0 and isinstance(lexicon[0],Vocabulary):
+        lex1 = lexicon
+    else:
+        for entry in lexicon:
+            if isinstance(entry,Vocabulary):
+                lexicon += [entry]
+            else: 
+                lex1 += entry.all_outputs_as_voc()
+    lex1=lex1+[Vocabulary(number,numeral)] # so the new word itself is found at the end
+    checkpoint=0 # point from which parsing is finally performed already
+    highlights=[] #list of highlights, initially empty
+    for end in range(len(numeral)+1): #set end of the observed substring
+        startrange=range(checkpoint,end) #start of observed string may lie between checkpoint and end
+        for highlight in highlights:
+            startrange=set(startrange)-set(highlight.hlrange()) # observed strings may not start inside present highlights. rather they have to fully contain a highlight or be disjoint with it
+        startrange=sorted(list(startrange)) # so ints in startrange are sorted by size
+        for start in startrange: # set start of observed substring of numeral
+            subnum_found_at_this_end=False # boolean condition to break start-loop
+            substring=numeral[start:end] #set observed substring
+            if print_documentation: print('substring: ',substring)
+            for entry in lex1: #browse current lexicon
+                if entry.word==substring: #look if substring appears
+                    subnum_found_at_this_end=True
+                    if 2*entry.number<number: #highlighting condition
+                        if print_documentation: print(substring+' <' + str(entry.number) + '/2')
+                        #highlights=[highlight for highlight in highlights if not highlight.start>=start]# if a highlight is contained in new highlight, then remove it from list of highlights
+                        for highlight in highlights[:]: #browse through present highlights
+                            if highlight.start>=start: # if a highlight is contained in new highlight,...
+                                if print_documentation: print("remove "+highlight.numeral)
+                                highlights.remove(highlight) #then remove it from list of highlights
+                        highlights=highlights+[Highlight(entry,start)] # add new highlight
+                        if print_documentation: print('Unpacked: ['+','.join([str(highlight.numeral) for highlight in highlights])+']')
+                    else:
+                        if print_documentation: print(substring+' ≥' + str(entry.number) + '/2')
+                        checkpoint=end
+                        if print_documentation: print("Set checkpoint behind "+numeral[:checkpoint])
+                    break # out of browsing the lexicon
+            if subnum_found_at_this_end:
+                break # out of start-loop
+    root=numeral
+    for highlight in reversed(highlights):
+        root=root[0:highlight.start]+'_'+root[highlight.end():len(root)]
+    decompstr=str(number)+'='+root+'('
+    decompstr=decompstr+','.join([str(highlight.number) for highlight in highlights])
+    #for highlight in highlights:
+    #    decompstr=decompstr+str(highlight.number)+','
+    decompstr=decompstr+')'
+    if print_result: print(decompstr)
+    return SCFunction(root,[[Vocabulary(highlight.number,highlight.numeral)] for highlight in highlights],[0 for highlight in highlights]+[number])
 
 def advanced_parse(number, word, lexicon, print_doc, print_result):
     if print_doc: print('parse '+word+' '+str(number))
@@ -506,14 +614,15 @@ def advanced_parse(number, word, lexicon, print_doc, print_result):
                     subnum_found_at_this_end=True
                     subentry_found = False
                     if 2*entry.number < number or mult_found:
+                        if print_doc: print(substr+' is <' + str(number) + '/2')
                         for highlight in reversed(highlights):
                             if highlight.start >= start:
                                 if print_doc: print("remove "+highlight.numeral)
                                 highlights.remove(highlight)
                         highlights=highlights+[Highlight(Vocabulary(entry.number,entry.word),start)]
-                        if print_doc: print([highlight.numeral for highlight in highlights])
+                        if print_doc: print('Unpacked: ',[highlight.numeral for highlight in highlights])
                     else: 
-                        if print_doc: print(substr+' violates HC')
+                        if print_doc: print(substr+" is ≥" + str(number) + '/2')
                         mult_found=True
                         checkpoint=end
                         potential_highlight = None
@@ -521,27 +630,39 @@ def advanced_parse(number, word, lexicon, print_doc, print_result):
                         for highlight in highlights:
                             if highlight.number**2 < entry.number:
                                 earliest_laterstart = min(end,highlight.end()) #so factors remain untouched
+                        potential_highlight = None
                         for laterstart in range(earliest_laterstart,end):
                             if print_doc: print('subnum = '+word[laterstart:end])
                             for subentry in lexicon1:
                                 if word[laterstart:end] == subentry.word:
                                     if subentry.number**2 <= entry.number:
-                                        if print_doc: print(word[laterstart:end]+" is FAC or SUM. If it would contain mult, its square would be larger than "+entry.word+'.')
+                                        if print_doc: 
+                                            print(word[laterstart:end]+" is <sqrt("+str(entry.number)+")") #print(word[laterstart:end]+" is FAC or SUM. If it would contain mult, its square would be larger than "+entry.word+'.')
+                                            if potential_highlight:
+                                                print("Ignore " + potential_highlight.word + " because " + word[laterstart:end] + " is its subnumeral.")
                                         subentry_found=True
-                                        for highlight in reversed(highlights):
-                                            if highlight.end() > laterstart:
-                                                if print_doc: print("remove "+highlight[0])
-                                                highlights.remove(highlight)
-                                        highlights=highlights+[Highlight(Vocabulary(subentry.number,subentry.word),laterstart)]
-                                        checkpoint = laterstart
-                                        potential_highlight = None
-                                        if print_doc: print([highlight.numeral for highlight in highlights])
+                                        #for highlight in reversed(highlights):
+                                            #if highlight.end() > laterstart:
+                                                #if print_doc: print("remove "+highlight[0])
+                                                #highlights.remove(highlight)
+                                        #highlights=highlights+[Highlight(Vocabulary(subentry.number,subentry.word),laterstart)]
+                                        #checkpoint = laterstart
+                                        potential_highlight = Highlight(Vocabulary(subentry.number,subentry.word),laterstart)
+                                        potential_checkpoint = laterstart
+                                        if print_doc: print('Unpacked: ',[highlight.numeral for highlight in highlights])
                                     else:
                                         if entry.number % subentry.number != 0 and 2*subentry.number < number:
-                                            if print_doc: print(word[laterstart:end]+" probably contains SUM. As "+subentry.word+' is no divisor of '+entry.word+', '+entry.word+' has to contain SUM. '+subentry.word+' cannot contain FAC*MULT, as it is smaller than half of '+entry.word+': And it cannot be FAC, as its square is larger than '+entry.word+'. So it is composed of SUM and MULT. If it turns out to be irreducible with the present properties, we assume it is SUM')
+                                            if print_doc: 
+                                                print(word[laterstart:end]+" is at least <" + str(number) + "/2 and is no divisor of " + entry.word + ".") #print(word[laterstart:end]+" probably contains SUM. As "+subentry.word+' is no divisor of '+entry.word+', '+entry.word+' has to contain SUM. '+subentry.word+' cannot contain FAC*MULT, as it is smaller than half of '+entry.word+': And it cannot be FAC, as its square is larger than '+entry.word+'. So it is composed of SUM and MULT. If it turns out to be irreducible with the present properties, we assume it is SUM')
+                                                if potential_highlight:
+                                                    print("Ignore " + potential_highlight.word + " because " + word[laterstart:end] + " is its subnumeral.")
                                             potential_highlight = Highlight(Vocabulary(subentry.number,subentry.word),laterstart)
                                             potential_checkpoint = laterstart
-                                        else:
+                                        elif entry.number % subentry.number == 0:
+                                            if print_doc: print(str(subentry.number) + " is divisor of " + str(entry.number) + " and is ≥sqrt(" + str(entry.number) + ").")
+                                            potential_highlight = None
+                                        elif 2*subentry.number >= number:
+                                            if print_doc: print(str(subentry.number) +" is at least <" + str(number) + "/2")
                                             potential_highlight = None
                             if subentry_found:
                                 break  
@@ -552,21 +673,35 @@ def advanced_parse(number, word, lexicon, print_doc, print_result):
                                     highlights.remove(highlight)
                             highlights = highlights+[potential_highlight]
                             checkpoint = potential_checkpoint
-                            if print_doc: print([highlight.root for highlight in highlights])
+                            if print_doc: print('Unpacked: ',[highlight.root for highlight in highlights])
+                        if print_doc: print("Set checkpoint behind "+word[:checkpoint])
                     break                    
             if subnum_found_at_this_end:
                 break
+    #print('Unpacked subnums: ',len(highlights))
     if len(highlights) == 2:
-        if highlights[0].number + highlights[1].number == number or highlights[0].number * highlights[1].number == number:
-            suspected_mult = max(highlights, key=lambda highlight: highlight.number)
-            if print_doc: print("remove "+suspected_mult.root+' since it is probably mult.')
+        if highlights[0].number + highlights[1].number == number:
+            sohi = sorted(highlights, key=lambda highlight: highlight.number)
+            suspected_mult = sohi[-1]
+            if print_doc: print("remove "+suspected_mult.root+' because ' + sohi[0].root + ' + ' + sohi[1].root + " = " + word + " and "+ sohi[0].root + ' > ' + sohi[1].root + "so it is probably mult.")
+            highlights.remove(suspected_mult)
+        elif highlights[0].number * highlights[1].number == number:
+            sohi = sorted(highlights, key=lambda highlight: highlight.number)
+            suspected_mult = sohi[-1]
+            if print_doc: print("remove "+suspected_mult.root+' because ' + sohi[0].root + ' * ' + sohi[1].root + " = " + word + " and "+ sohi[0].root + ' > ' + sohi[1].root + "so it is probably mult.")
             highlights.remove(suspected_mult)
     elif len(highlights) == 3:
-        suspected_mult = max(highlights, key=lambda highlight: highlight.number)
+        sohi = sorted(highlights, key=lambda highlight: highlight.number)
+        suspected_mult = sohi[-1]
+        #print('suspected mult: ', suspected_mult.root)
         if suspected_mult.number**2 > number:
-            other_numbers = [highlight.number for highlight in highlights if highlight != suspected_mult]
-            if other_numbers[0] * suspected_mult.number + other_numbers[1] == number or other_numbers[1] * suspected_mult.number + other_numbers[0] == number:
-                if print_doc: print("remove "+suspected_mult.root+' since it is probably mult.')
+            #other_numbers = [highlight.number for highlight in highlights if highlight != suspected_mult]
+            other_numbers = [highlight for highlight in highlights if highlight != suspected_mult]
+            if other_numbers[0].number * suspected_mult.number + other_numbers[1].number == number:
+                if print_doc: print("remove "+suspected_mult.root+ " because " + other_numbers[0].root + " * " + suspected_mult.root + " + " + other_numbers[1].root + " = " + word + " and " + suspected_mult.root + " > " + other_numbers[0].root + " so it is probably mult.")
+                highlights.remove(suspected_mult)
+            elif other_numbers[1].number * suspected_mult.number + other_numbers[0].number == number:
+                if print_doc: print("remove "+suspected_mult.root+ " because " + other_numbers[1].root + " * " + suspected_mult.root + " + " + other_numbers[0].root + " = " + word + " and " + suspected_mult.root + " > " + other_numbers[1].root + " so it is probably mult.")
                 highlights.remove(suspected_mult)
     elif len(highlights) > 3:
         suspected_mult = max(highlights, key=lambda highlight: highlight.number)
@@ -588,9 +723,12 @@ def advanced_parse(number, word, lexicon, print_doc, print_result):
     return SCFunction(root,[[Vocabulary(highlight.number,highlight.numeral)] for highlight in highlights],[0 for highlight in highlights]+[number])
 
 
-def list_scfunctions(language):
-    print('Parse numerals in '+language)
-    lex=create_lexicon(language)
+def list_scfunctions(language,printb=True,set_limit=999999):
+    if printb: print('Parse numerals in '+language)
+    lex=[entry for entry in create_lexicon(language) if entry.number<set_limit]
+    limit = len(lex)
+    if limit > 1000:
+        limit = 999999
     set_of_scfunctions=[]
     irreducibles=[]
     for entry in lex:
@@ -607,20 +745,29 @@ def list_scfunctions(language):
                 set_of_scfunctions=set_of_scfunctions+[parse]
         else:
             irreducibles += [parse]
-    print(language+' has '+str(len(set_of_scfunctions))+' number functions and '+str(len(irreducibles))+' irreducible numbers.')
-    print('The number functions are:')
+    if printb: print(language+' has '+str(len(set_of_scfunctions))+' numeral functions and '+str(len(irreducibles))+' irreducible numerals when using the advanced numeral decomposer for numerals till '+ str(limit) +'.')
+    if printb: print('The number functions are:')
     printout=f""
     for scf in set_of_scfunctions:
         example=scf.sample()
-        printout=printout+scf.root+':\t x -> '+str([round(coeff) for coeff in scf.mapping[:-1]])+'*x+'+str(round(scf.mapping[-1]))+', \t e.g. '+str(example.mapping[-1])+' is '+str(example.mapping[-1])+'\n'
-    print(printout)
-    print('The irreducibles are: ' + ', '.join([scf.root+' ('+str(scf.mapping[-1])+')' for scf in irreducibles]))
-    print('')
+        printout=printout + scf.present(printout=False,domain=True)+', \t e.g. '+str(example.mapping[-1])+' is '+str(example.root)+'\n'
+        #+scf.root+':\t x -> '+str([round(coeff) for coeff in scf.mapping[:-1]])+'*x+'+str(round(scf.mapping[-1]))
+    if printb: print(printout)
+    if printb: print('The irreducibles are: ' + ', '.join([scf.root+' ('+str(scf.mapping[-1])+')' for scf in irreducibles]))
+    if printb: print('')
+    
+    # show clusters
+    #for scf in set_of_scfunctions:
+        #print(scf.root)
+        #print([o.mapping[-1] for o in scf.all_outputs()])
     return len(set_of_scfunctions) + len(irreducibles)
     
-def old_list_scfunctions(language):
+def old_list_scfunctions(language,printb=True,set_limit=999999):
     #print('Trying old parser')
-    lex=create_lexicon(language)
+    lex=[entry for entry in create_lexicon(language) if entry.number<set_limit]
+    limit = len(lex)
+    if limit > 1000:
+        limit = 999999
     set_of_scfunctions=[]
     irreducible_count=0
     for entry in lex:
@@ -637,15 +784,17 @@ def old_list_scfunctions(language):
                 set_of_scfunctions=set_of_scfunctions+[parse]
         else:
             irreducible_count=irreducible_count+1
-    print('The old parser had structured '+language+' into '+str(len(set_of_scfunctions))+' number functions and '+str(irreducible_count)+' irreducible numbers.')
-    print('')
-    #print(language+' has '+str(len(set_of_scfunctions))+' number functions and '+str(irreducible_count)+' irreducible numbers.')
-    #print('The number functions are:')
-    #printout=f""
-    #for scf in set_of_scfunctions:
-        #example=scf.sample()
-        #printout=printout+scf.root+':\t x -> '+str([round(coeff) for coeff in scf.mapping[:-1]])+'*x+'+str(round(scf.mapping[-1]))+', \t e.g. '+str(example.mapping[-1])+' is '+str(example.mapping[-1])+'\n'
-    #print(printout)
+    #print('The old parser had structured '+language+' into '+str(len(set_of_scfunctions))+' number functions and '+str(irreducible_count)+' irreducible numbers.')
+    #print('')
+    if printb: print(language+' has '+str(len(set_of_scfunctions))+' numeral functions and '+str(irreducible_count)+' irreducible numerals when using the prototype numeral decomposer for numerals till '+ str(limit) +'.')
+    if printb: print('The number functions are:')
+    printout=f""
+    for scf in set_of_scfunctions:
+        example=scf.sample()
+        printout=printout + scf.present(False,False)+', \t e.g. '+str(example.mapping[-1])+' is '+str(example.mapping[-1])+'\n'
+        #scf.root+':\t x -> '+str([round(coeff) for coeff in scf.mapping[:-1]])+'*x+'+str(round(scf.mapping[-1]))
+            
+    if printb: print(printout)
     return len(set_of_scfunctions) + irreducible_count
 
 def decompose_numeral(number,language,version='new'):
@@ -658,4 +807,30 @@ def decompose_numeral(number,language,version='new'):
         advanced_parse(number,word,create_lexicon(language),True,True)
     elif version == 'old':
         proto_parse(number,word,create_lexicon(language),True,True)
+            
+def decompose_numeral_custom(number,word,lexicon,version='new'):
+    if isinstance(lexicon,str):
+        try:
+            lex = create_lexicon(lexicon)
+        except:
+            raise NotImplementedError("Assuming " + language + " is a language, it is not supported. Use a custom lexicon to test the decomposer on it")
+    elif isinstance(lexicon,list):
+        if len(lexicon)==0:
+            lex = lexicon
+        elif isinstance(lexicon[0],list):
+            try:
+                lex = [Vocabulary(l[0],l[1]) for l in lexicon]
+            except:
+                raise TypeError("Custom lexicon must be a list of Vocabulary objects or of (number,numeral) pairs, e.g. [[1,'one'],[2,'two']], ")
+        elif isinstance(lexicon[0],Vocabulary):
+            lex = lexicon
+        else:
+            raise TypeError("Custom lexicon must be a list of Vocabulary objects or of (number,numeral) pairs, e.g. [[1,'one'],[2,'two']], ")
+                    
+    else:
+        raise TypeError("Lexicon must be a string representing a language or a list serving as a custom lexicon")
+    if version == 'new':
+        advanced_parse(number,word,lex,True,True)
+    elif version == 'old':
+        proto_parse(number,word,lex,True,True)
 
