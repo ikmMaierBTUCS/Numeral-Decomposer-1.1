@@ -9,22 +9,24 @@ Given that all numerals of the shape 'X hundred and Y' are decomposed to '_ hund
 
 '_ hundred and \_': {1,...,9}x{1,...,99}, (x,y)->100x+y.
 
-The decomposition algorithm is based on arithmetic criteria that do not only work for base 10 numeral systems, but almost any system, see 'Performance Analysis'.
+The decomposition algorithm is based on arithmetic criteria that do not only work for base 10 numeral systems, but almost any system, see [results/performance_analysis.txt](results/performance_analysis.txt).
 
-Try it out by
-1. making sure that you have installed the packages ```numpy, num2words, sympy, diophantine, alphabet_detector, pandas``` ,
-2. downloading the folder numdec_app,
-3. navigating into it and
-4. prompting ```python numdec.py```.
+## Try it out
+```
+pip install -r requirements.txt
+python numdec.py
+```
 
-'Code.py' is a Python script containing the function advanced_parse, which represents the Numeral Decomposer 1.1.
-Function decompose_numeral is easy to use. Just pass an int number and a language* to see a fully documented decomposition of the numeral.
-
-'Performance Analysis' is the output of the script 'Code for Performance Analysis'. For 260 languages, it summarizes what lexicon of functions is produced by the Numeral Decomposer 1.1.
+## Repository contents
+- `numdec.py` contains the Numeral Decomposer 1.1 (function `advanced_parse`) and its prototype 1.0 (function `proto_parse`).
+  Function `decompose_numeral` is easy to use. Just pass an int number and a language* to see a fully documented decomposition of the numeral.
+- `data/` contains the numerals of languages that are not covered by [num2words](https://pypi.org/project/num2words/).
+  `Numeral.csv` contains the numerals from [Languages and Numbers](https://www.languagesandnumbers.com).
+- `results/performance_analysis.txt` is the output of the script `performance_analysis.py`. For 260 languages, it summarizes what lexicon of functions is produced by the Numeral Decomposer 1.1 and 1.0.
 
 In the plots, we present the lexicon sizes of the numeral decomposers, i.e. the numbers of functions that the numeral decomposers structure a language's numeral system into.
-In 'Lexicon sizes of Versions 1.0 and 1.1 plotted.png', the blue line shows the lexicon sizes of the Numeral Decomposer 1.1 in arising order from left to right. The green line shows the lexicon sizes of the Numeral Decomposer 1.0 in arising order from left to right. For the sake of better presentation, we removed the 2 largest out of 277 values from the the plot each for both versions.
+In `results/lexicon_sizes.png`, the blue line shows the lexicon sizes of the Numeral Decomposer 1.1 in ascending order from left to right. The green line shows the lexicon sizes of the Numeral Decomposer 1.0 in ascending order from left to right. For the sake of better presentation, we removed the 2 largest out of 277 values from the plot for both versions.
 
-In the plot 'Ratios of Version 1.1 lexicon sizes to Version 1.0 lexicon sizes.png', we plotted by which ratios the Numeral Decomposer 1.1 reduced lexica in comparison to the Numeral Decomposer 1.0.
+In `results/lexicon_size_ratios.png`, we plotted by which ratios the Numeral Decomposer 1.1 reduced lexica in comparison to the Numeral Decomposer 1.0.
 
-*Pass a language by writing one the strings listed in 'Languages'. For some of the languages you also need to download 'Numeral.csv' and link its path to FILE_PATH_OF_LANGUAGESANDNUMBERS_DATA_CSV in the code.
+*Pass a language by writing one of the strings listed in [languages.txt](languages.txt).

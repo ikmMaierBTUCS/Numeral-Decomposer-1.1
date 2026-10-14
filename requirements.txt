@@ -1,0 +1,6 @@
+numpy
+pandas
+num2words
+diophantine
+alphabet-detector
+matplotlib
